@@ -11,7 +11,7 @@ https://github.com/gaia-dpci/gaia-dr3-photometric-uncertainties
 import os
 import pandas as pd
 import numpy as np
-import scipy.interpolate as interpolate
+from scipy import interpolate
 
 __all__ = ["LogMagUncertainty", "magnitude_uncertainty"]
 
@@ -32,13 +32,16 @@ class LogMagUncertainty:
 
     The code in this class is a modified version of the Edr3LogMagUncertainty code in
     the Jypyter notebook EDR3_Photometric_Uncertainties.ipynb at
-    https://github.com/gaia-dpci/gaia-dr3-photometric-uncertainties. The additional function estimate_for_maglist() is included to facilitate calculating the uncertainties for the number of observationis corresponding to a given Gaia data release and for the input list of magnitudes.
+    https://github.com/gaia-dpci/gaia-dr3-photometric-uncertainties.
+    The additional function estimate_for_maglist() is included to facilitate calculating
+    the uncertainties for the number of observationis corresponding to a given Gaia data release
+    and for the input list of magnitudes.
     """
 
     def __init__(self):
         """ """
         _df = pd.read_csv(_spline_csv_file)
-        splines = dict()
+        splines = {}
         splines["g"] = self.__init_spline(_df, "knots_G", "coeff_G")
         splines["bp"] = self.__init_spline(_df, "knots_BP", "coeff_BP")
         splines["rp"] = self.__init_spline(_df, "knots_RP", "coeff_RP")
@@ -47,15 +50,16 @@ class LogMagUncertainty:
         self.__nobs_drs = _nobs_drs_bands
 
     def estimate(
-        self, band, nobs: np.array([], int) = 0, mag_range=None, mag_samples=1000
-    ):
+        self, band, nobs: np.ndarray | int, mag_range=None, mag_samples=1000
+    ) -> pd.DataFrame:
         """
         Estimate the log(mag) vs mag uncertainty
 
         Parameters
         ----------
         band : str
-            name of the band for which the uncertainties should be estimated (case-insensitive). Must be one of "g", "gbp", or "grp".
+            name of the band for which the uncertainties should be estimated (case-insensitive).
+            Must be one of "g", "gbp", or "grp".
         nobs : ndarray, int
             number of observations for which the uncertainties should be estimated.
             Must be a scalar integer value or an array of integer values.
@@ -84,11 +88,7 @@ class LogMagUncertainty:
         if mag_range is None:
             mag_range = (4.0, 21.0)
         else:
-            if mag_range[0] < 4.0:
-                raise ValueError(
-                    f"Uncertainties can be estimated only in the range {band}[4, 21]"
-                )
-            elif mag_range[1] > 21.0:
+            if mag_range[0] < 4.0 or mag_range[1] > 21.0:
                 raise ValueError(
                     f"Uncertainties can be estimated only in the range {band}[4, 21]"
                 )
@@ -101,25 +101,27 @@ class LogMagUncertainty:
         return pd.DataFrame(data=__dc)
 
     def estimate_for_maglist(
-        self, band, maglist: np.array([], float) = 15.0, release=_default_release
-    ):
+        self, band, maglist: np.ndarray | float = 15.0, release=_default_release
+    ) -> pd.DataFrame:
         """
         Estimate the log(mag) vs mag uncertainty
 
         Parameters
         ----------
         band : str
-            name of the band for which the uncertainties should be estimated (case-insensitive). Must be one of "g", "gbp", or "grp".
+            name of the band for which the uncertainties should be estimated (case-insensitive).
+            Must be one of "g", "gbp", or "grp".
         maglist : ndarray, float
             List of magnitudes (corresponding to the requested band) for which the
             uncertainties should be estimated. Must be a scalar float value or an array
             of float values. The values must be in the range [4, 21].
         release : str
-            Gaia data release for which the uncertainties are simulated (case-insensitive). Must be one of "dr3", "dr4", or "dr5".
+            Gaia data release for which the uncertainties are simulated (case-insensitive).
+            Must be one of "dr3", "dr4", or "dr5".
 
         Raises
         ------
-        ValueError
+        VaueError
             For wrong inputs.
 
         Returns
@@ -136,8 +138,11 @@ class LogMagUncertainty:
         if release not in ["dr3", "dr4", "dr5"]:
             raise ValueError(f"Unknown data release: {release}")
         if np.any(maglist < 4.0) or np.any(maglist > 21.0):
+            print("CHECK")
+            print(maglist)
+            print(np.min(maglist), np.max(maglist))
             raise ValueError(
-                f"One or more of the values in maglist is outside the range [4, 21]"
+                "One or more of the values in maglist is outside the range [4, 21]"
             )
         #
         __cols = self.__compute_nobs(band, maglist, self.__nobs_drs[release][band])
@@ -153,10 +158,10 @@ class LogMagUncertainty:
     def __compute_nobs(self, band, xx, nobs):
         if isinstance(nobs, int):
             nobs = [nobs]
-        __out = dict()
+        __out = {}
         for num in nobs:
             if num < 0:
-                raise ValueError(f"Number of observations should be strictly positive")
+                raise ValueError("Number of observations should be strictly positive")
             if num == 0:
                 __out[f"logU_{self.__nobs[band]:d}"] = self.__splines[band](xx)
             else:
@@ -167,8 +172,8 @@ class LogMagUncertainty:
 
 
 def magnitude_uncertainty(
-    band, maglist: np.array([], float) = 15.0, release=_default_release
-):
+    band, maglist: np.ndarray | float = 15.0, release=_default_release
+) -> np.ndarray:
     r"""
     Provide the uncertainty for :math:`G`, :math:`G_\mathrm{BP}`, and
     :math:`G_\mathrm{RP}` as a function of magnitude (math:`G`, :math:`G_\mathrm{BP}`,
@@ -177,13 +182,15 @@ def magnitude_uncertainty(
     Parameters
     ----------
     band : str
-        name of the band for which the uncertainties are requested (case-insensitive). Must be one of "g", "gbp", or "grp".
+        name of the band for which the uncertainties are requested (case-insensitive).
+        Must be one of "g", "gbp", or "grp".
     maglist : ndarray, float
         List of magnitudes in the same band for which the uncertainties are requested.
         Must be a scalar float value or an array of float values. The values must be in
         the range [4, 21].
     release : str
-        Gaia data release for which the uncertainties are requested (case-insensitive). Must be one of "dr3", "dr4", or "dr5".
+        Gaia data release for which the uncertainties are requested (case-insensitive).
+        Must be one of "dr3", "dr4", or "dr5".
 
     Returns
     -------

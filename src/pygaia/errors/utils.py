@@ -29,6 +29,7 @@ def calc_z_plx(gmag):
     if np.isscalar(gmag):
         result = np.amax((gatefloor, np.power(10.0, 0.4 * (gmag - 15.0))))
     else:
+        # indices = gmag>
         result = np.power(10.0, 0.4 * (gmag - 15.0))
         indices = result < gatefloor
         result[indices] = gatefloor

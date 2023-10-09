@@ -170,7 +170,10 @@ def angular_distance(phi1, theta1, phi2, theta2, return_posangle=False):
     posangle : float
         Position angle as defined above in radians.
     """
-    # The Formula below is numerically more stable than np.arccos( np.sin(theta1)*np.sin(theta2) + np.cos(phi2-phi1)*np.cos(theta1)*np.cos(theta2) ). See: https://en.wikipedia.org/wiki/Great-circle_distance
+    # The Formula below is numerically more stable than np.arccos(
+    # np.sin(theta1)*np.sin(theta2) +
+    # np.cos(phi2-phi1)*np.cos(theta1)*np.cos(theta2) ). See:
+    # https://en.wikipedia.org/wiki/Great-circle_distance
     dist = np.arctan2(
         np.sqrt(
             (np.cos(theta2) * np.sin(phi2 - phi1)) ** 2
@@ -239,7 +242,7 @@ class CoordinateTransformation:
         """
         Query which is the starting coordinate system of this transformation.
 
-        Returns
+        Returnsmak
         -------
         from_sys : str
             String with starting coordinate system.
